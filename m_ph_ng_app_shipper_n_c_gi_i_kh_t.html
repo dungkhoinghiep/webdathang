@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mô Phỏng App Shipper Nước Giải Khát & Chấm Công</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          keyframes: {
+            radar: {
+              '0%': { transform: 'scale(0.8)', opacity: '0.85' },
+              '100%': { transform: 'scale(2.6)', opacity: '0' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(100%)' },
+              '100%': { transform: 'translateY(0)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'scale(0.96)' },
+              '100%': { opacity: '1', transform: 'scale(1)' },
+            }
+          },
+          animation: {
+            radar: 'radar 2s infinite ease-out',
+            slideUp: 'slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            fadeIn: 'fadeIn 0.2s ease-out forwards',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Tùy chỉnh thanh cuộn gọn gàng bên trong khung điện thoại và bảng dữ liệu */
+    .phone-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .phone-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .phone-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.45);
+      border-radius: 9999px;
+    }
+    .db-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .db-scroll::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.4);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen selection:bg-blue-100 selection:text-blue-900">
+
+  <!-- Header tổng quan phía trên -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+          <!-- Icon xe giao hàng -->
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">Mô Phỏng Tương Tác: Shipper Nước Giải Khát</h1>
+          <p class="text-xs text-slate-500">Giao diện Flutter Material 3 + Đồng bộ Supabase Realtime</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span id="headerStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+          <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+          Chưa vào ca
+        </span>
+        <button onclick="resetAllSimulation()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white transition shadow-sm cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+          </svg>
+          Đặt lại từ đầu
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Nội dung chính 2 cột -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- CỘT TRÁI: KHUNG ĐIỆN THOẠI MÔ PHỎNG (5 cột trên desktop) -->
+      <div class="lg:col-span-5 flex flex-col items-center">
+        <!-- Vỏ điện thoại Android -->
+        <div class="relative w-full max-w-[392px] h-[780px] bg-slate-900 rounded-[44px] p-[11px] shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] border-[3px] border-slate-800 select-none">
+          <!-- Nút vật lý cạnh bên -->
+          <div class="hidden sm:block absolute -right-[5px] top-28 w-[3px] h-12 bg-slate-700 rounded-r"></div>
+          <div class="hidden sm:block absolute -right-[5px] top-44 w-[3px] h-20 bg-slate-700 rounded-r"></div>
+
+          <!-- Màn hình hiển thị bên trong điện thoại -->
+          <div id="phoneScreen" class="relative w-full h-full bg-[#F8FAFC] rounded-[34px] overflow-hidden flex flex-col">
+
+            <!-- 1. STATUS BAR ĐIỆN THOẠI + FOREGROUND NOTIFICATION -->
+            <div class="bg-white z-20 shrink-0">
+              <div class="px-5 pt-2.5 pb-1.5 flex items-center justify-between text-[11px] font-semibold text-slate-800">
+                <span id="phoneClock">22:39</span>
+                <!-- Camera nốt ruồi -->
+                <div class="w-4 h-4 rounded-full bg-slate-900 flex items-center justify-center">
+                  <div class="w-1.5 h-1.5 rounded-full bg-slate-700"></div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-bold text-slate-600">4G</span>
+                  <!-- Sóng -->
+                  <svg class="w-3.5 h-3.5 text-slate-800" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M2 22h20V2L2 22z" />
+                  </svg>
+                  <!-- Pin -->
+                  <div class="flex items-center">
+                    <div class="w-5 h-2.5 border border-slate-800 rounded-[3px] p-[1px] flex items-center">
+                      <div class="w-4 h-full bg-emerald-500 rounded-[1px]"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Thông báo chạy ngầm Android (Foreground Service Notification) khi đang trong ca -->
+              <div id="foregroundNotification" class="hidden mx-2.5 mb-1.5 px-3 py-2 rounded-2xl bg-blue-50 border border-blue-200/80 shadow-xs transition-all">
+                <div class="flex items-start gap-2.5">
+                  <div class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                    <svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[10px] font-bold uppercase tracking-wider text-blue-700">Đang trong ca giao hàng</span>
+                      <span class="text-[10px] font-mono text-blue-600" id="fgGpsCounter">GPS: 1 điểm</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-snug truncate">Hệ thống đang ghi nhận lộ trình di chuyển</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. APPBAR MATERIAL 3 -->
+            <div class="bg-white px-4 py-2.5 border-b border-slate-200/80 flex items-center justify-between shrink-0 z-10">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-[15px] text-slate-900 tracking-tight">Shipper Nước Giải Khát</span>
+              </div>
+              <!-- Chip thu nhập realtime theo số ly -->
+              <div id="earningsChip" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs transition-all">
+                <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.736 6.979C9.208 6.193 9.696 6 10 6c.304 0 .792.193 1.264.979a1 1 0 001.715-1.029C12.279 4.784 11.232 4 10 4s-2.279.784-2.979 1.95c-.285.475-.507 1-.67 1.55H6a1 1 0 000 2h.013a9.358 9.358 0 000 1H6a1 1 0 100 2h.351c.163.55.385 1.075.67 1.55C7.721 15.216 8.768 16 10 16s2.279-.784 2.979-1.95a1 1 0 10-1.715-1.029c-.472.786-.96.979-1.264.979-.304 0-.792-.193-1.264-.979a4.265 4.265 0 01-.264-.521H10a1 1 0 100-2H8.017a7.36 7.36 0 010-1H10a1 1 0 100-2H8.472c.08-.185.167-.36.264-.521z" />
+                </svg>
+                <span id="chipText">0 đ (0 ly)</span>
+              </div>
+            </div>
+
+            <!-- 3. THÂN ỨNG DỤNG -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+
+              <!-- Nút Chấm Công Vào Ca / Ra Ca -->
+              <div class="px-3 pt-2.5 pb-2 bg-white shrink-0 space-y-2">
+                <button
+                  id="shiftActionBtn"
+                  onclick="handleShiftToggle()"
+                  class="w-full h-10 rounded-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-sm tracking-wide shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer">
+                  <svg id="shiftBtnIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  <span id="shiftBtnLabel">CHẤM CÔNG VÀO CA</span>
+                </button>
+
+                <!-- Thông tin Nhân viên trong ca & Đơn giá 1.000đ/ly -->
+                <div id="shiftWorkerBanner" class="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-2 text-[11px]">
+                  <div id="workerInfoDisplay" class="flex items-center gap-1.5 text-slate-600 font-medium truncate">
+                    <span class="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
+                    <span class="truncate">Chưa điểm danh nhân viên</span>
+                  </div>
+                  <span class="shrink-0 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80">
+                    🧋 1.000đ / 1 ly
+                  </span>
+                </div>
+              </div>
+
+              <!-- 4. BẢN ĐỒ GOOGLE MAP MÔ PHỎNG (QUẬN 1 - QUẬN 3 TP.HCM) -->
+              <div class="relative h-[202px] w-full bg-[#E5E3DF] border-y border-slate-200 overflow-hidden shrink-0">
+                <!-- SVG Bản đồ đường phố Q1-Q3 -->
+                <svg id="googleMapSvg" viewBox="0 0 400 260" class="w-full h-full object-cover transition-transform duration-300 origin-center">
+                  <!-- Nền đất đô thị -->
+                  <rect width="400" height="260" fill="#F1F3F4" />
+
+                  <!-- Sông Sài Gòn góc phải dưới -->
+                  <path d="M315,260 C330,200 355,145 400,105 L400,260 Z" fill="#AADAFF" />
+                  <text x="342" y="218" fill="#3B82F6" font-size="7.5" font-weight="600" transform="rotate(-48 342 218)" opacity="0.85">Sông Sài Gòn</text>
+
+                  <!-- Công viên Tao Đàn & Công viên 23/9 -->
+                  <path d="M55,85 L125,65 L140,115 L70,135 Z" fill="#C8E6C9" rx="6" />
+                  <text x="72" y="103" fill="#2E7D32" font-size="6.5" font-weight="600">CV Tao Đàn</text>
+
+                  <path d="M135,165 L235,140 L242,162 L142,188 Z" fill="#C8E6C9" />
+                  <text x="165" y="167" fill="#2E7D32" font-size="6.5" font-weight="600">CV 23/9</text>
+
+                  <!-- Các khối nhà (City blocks) -->
+                  <polygon points="155,75 215,60 228,110 168,125" fill="#E8EAED" />
+                  <polygon points="228,55 290,40 305,92 242,108" fill="#E8EAED" />
+                  <polygon points="248,118 315,100 328,150 260,168" fill="#E8EAED" />
+                  <polygon points="150,198 230,178 242,225 162,245" fill="#E8EAED" />
+                  <polygon points="245,175 305,160 315,205 255,220" fill="#E8EAED" />
+
+                  <!-- Mạng lưới đường phố chính -->
+                  <!-- Đường Cách Mạng Tháng 8 -->
+                  <path d="M35,15 L125,250" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" />
+                  <path d="M35,15 L125,250" stroke="#FCD34D" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.7" />
+                  <text x="52" y="75" fill="#5F6368" font-size="6.5" font-weight="700" transform="rotate(69 52 75)">Đ. Cách Mạng Tháng 8</text>
+
+                  <!-- Đường Nguyễn Thị Minh Khai -->
+                  <path d="M15,95 L340,15" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
+                  <text x="155" y="55" fill="#5F6368" font-size="6.5" font-weight="600" transform="rotate(-14 155 55)">Đ. Nguyễn Thị Minh Khai</text>
+
+                  <!-- Đường Lê Lợi -->
+                  <path d="M125,160 L325,110" stroke="#FFFFFF" stroke-width="9.5" stroke-linecap="round" />
+                  <text x="188" y="138" fill="#3C4043" font-size="7" font-weight="700" transform="rotate(-14 188 138)">Đường Lê Lợi</text>
+
+                  <!-- Đại lộ Nguyễn Huệ -->
+                  <path d="M235,60 L282,225" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" />
+                  <path d="M235,60 L282,225" stroke="#E2E8F0" stroke-width="2" />
+                  <text x="255" y="145" fill="#3C4043" font-size="7" font-weight="700" transform="rotate(74 255 145)">Đ. Nguyễn Huệ</text>
+
+                  <!-- Đường Pasteur -->
+                  <path d="M195,40 L250,240" stroke="#FFFFFF" stroke-width="7.5" stroke-linecap="round" />
+                  <text x="206" y="102" fill="#5F6368" font-size="6" font-weight="600" transform="rotate(74 206 102)">Đ. Pasteur</text>
+
+                  <!-- Đường Hàm Nghi -->
+                  <path d="M135,195 L340,145" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
+                  <text x="200" y="174" fill="#5F6368" font-size="6.5" font-weight="600" transform="rotate(-14 200 174)">Đ. Hàm Nghi</text>
+
+                  <!-- Nhóm vẽ Lộ trình Polyline đã đi -->
+                  <polyline id="routeShadowPolyline" points="" fill="none" stroke="#1D4ED8" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.25" />
+                  <polyline id="routePolyline" points="" fill="none" stroke="#2563EB" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" />
+
+                  <!-- Điểm xuất phát (Check-in Pin) -->
+                  <g id="startPinGroup" class="hidden">
+                    <circle id="startPinCircle" cx="150" cy="154" r="5" fill="#16A34A" stroke="#FFFFFF" stroke-width="2" />
+                  </g>
+
+                  <!-- Ghim 3 điểm giao hàng trên bản đồ -->
+                  <!-- Đơn 1: 123 Lê Lợi -->
+                  <g id="mapPinOrder1" transform="translate(215, 137)">
+                    <circle r="7" fill="#F97316" stroke="#FFFFFF" stroke-width="2" />
+                    <text y="2.5" text-anchor="middle" fill="#FFFFFF" font-size="7" font-weight="800">1</text>
+                  </g>
+                  <!-- Đơn 2: 456 Nguyễn Huệ -->
+                  <g id="mapPinOrder2" transform="translate(263, 160)">
+                    <circle r="7" fill="#F97316" stroke="#FFFFFF" stroke-width="2" />
+                    <text y="2.5" text-anchor="middle" fill="#FFFFFF" font-size="7" font-weight="800">2</text>
+                  </g>
+                  <!-- Đơn 3: 789 CMT8 -->
+                  <g id="mapPinOrder3" transform="translate(68, 102)">
+                    <circle r="7" fill="#F97316" stroke="#FFFFFF" stroke-width="2" />
+                    <text y="2.5" text-anchor="middle" fill="#FFFFFF" font-size="7" font-weight="800">3</text>
+                  </g>
+
+                  <!-- Vị trí Shipper hiện tại (Icon xe máy + Radar) -->
+                  <g id="shipperMarker" transform="translate(150, 154)">
+                    <circle r="14" fill="#3B82F6" opacity="0.32" class="animate-radar" />
+                    <circle r="10.5" fill="#2563EB" stroke="#FFFFFF" stroke-width="2" />
+                    <!-- Icon xe máy giao hàng thu nhỏ -->
+                    <g transform="translate(-6.5, -6.5) scale(0.54)" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="5.5" cy="17.5" r="3.5" />
+                      <circle cx="18.5" cy="17.5" r="3.5" />
+                      <path d="M15 6h3l2 5.5M5.5 17.5L9 11h5l2.5 6.5M9 11l-1.5-3.5H5" />
+                      <rect x="3" y="4" width="5" height="4" rx="1" fill="#FBBF24" stroke="none" />
+                    </g>
+                  </g>
+                </svg>
+
+                <!-- Nhãn Google góc trái dưới bản đồ -->
+                <div class="absolute bottom-1.5 left-2 pointer-events-none flex items-center gap-1.5">
+                  <span class="text-[10px] font-bold text-slate-600/80 bg-white/80 px-1.5 py-0.5 rounded shadow-2xs">Google</span>
+                  <span id="mapCoordBadge" class="text-[9.5px] font-mono text-slate-700 bg-white/85 px-1.5 py-0.5 rounded shadow-2xs">10.7725, 106.6980</span>
+                </div>
+
+                <!-- Nút điều khiển Chạy thử GPS trực quan trên bản đồ -->
+                <div class="absolute top-2 left-2 flex flex-col gap-1.5">
+                  <button
+                    id="stepMoveBtn"
+                    onclick="simulateStepMovement()"
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/95 hover:bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-bold shadow-sm transition cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                    Chạy thử (+30m)
+                  </button>
+
+                  <button
+                    id="autoDriveBtn"
+                    onclick="toggleAutoDrive()"
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/95 hover:bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-semibold shadow-sm transition cursor-pointer">
+                    <span id="autoDriveDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <span id="autoDriveLabel">Tự động chạy xe</span>
+                  </button>
+                </div>
+
+                <!-- Nút Định vị & Zoom (+/-) góc phải bản đồ -->
+                <div class="absolute top-2 right-2 flex flex-col gap-1.5">
+                  <button onclick="recenterMap()" title="Về vị trí hiện tại" class="w-7 h-7 rounded-md bg-white/95 hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm flex items-center justify-center cursor-pointer">
+                    <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06z" />
+                    </svg>
+                  </button>
+                  <div class="flex flex-col rounded-md bg-white/95 border border-slate-200 shadow-sm overflow-hidden">
+                    <button onclick="zoomMap(0.15)" class="w-7 h-6 hover:bg-slate-100 text-slate-700 font-bold text-sm border-b border-slate-200 cursor-pointer">+</button>
+                    <button onclick="zoomMap(-0.15)" class="w-7 h-6 hover:bg-slate-100 text-slate-700 font-bold text-sm cursor-pointer">−</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 5. DANH SÁCH ĐƠN HÀNG -->
+              <div class="px-3.5 pt-2.5 pb-1 flex items-center justify-between shrink-0">
+                <span class="text-[13px] font-bold text-slate-800">Danh sách đơn hàng</span>
+                <span id="orderProgressText" class="text-[11px] font-medium text-slate-500">0/3 hoàn thành</span>
+              </div>
+
+              <div id="ordersListContainer" class="flex-1 overflow-y-auto phone-scroll px-3 pb-12 space-y-2">
+                <!-- Danh sách thẻ đơn hàng render bởi JS -->
+              </div>
+            </div>
+
+            <!-- 6. BOTTOM SHEET XÁC MINH ẢNH CHỤP GIAO ĐƠN -->
+            <div id="proofBottomSheetOverlay" class="hidden absolute inset-0 bg-slate-900/55 z-30 flex flex-col justify-end">
+              <div class="bg-white rounded-t-3xl p-4 shadow-2xl animate-slideUp max-h-[92%] overflow-y-auto phone-scroll">
+                <!-- Thanh kéo giả -->
+                <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-2.5"></div>
+
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <span class="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mb-1">Xác minh giao đơn nước giải khát</span>
+                    <h3 id="sheetCustomerName" class="text-[15px] font-bold text-slate-900 truncate">Chị Lan Anh</h3>
+                    <div class="flex items-center gap-1.5 mt-0.5 text-xs">
+                      <span id="sheetCustomerPhone" class="font-semibold text-emerald-700 shrink-0">0909 123 456</span>
+                      <span class="text-slate-300">•</span>
+                      <p id="sheetCustomerAddress" class="text-slate-500 truncate">123 Lê Lợi, P. Bến Thành, Q.1</p>
+                    </div>
+                  </div>
+                  <button onclick="closeProofBottomSheet()" class="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Danh sách món nước cần kiểm tra trước khi giao -->
+                <div class="mt-2.5 p-2.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-start gap-2">
+                  <span class="text-base leading-none mt-0.5">🧋</span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-[10px] font-bold uppercase tracking-wide text-amber-800">Đơn nước cần giao:</span>
+                      <span id="sheetOrderCupBadge" class="text-[10.5px] font-extrabold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full">5 ly • +5.000đ</span>
+                    </div>
+                    <p id="sheetOrderItems" class="text-xs font-semibold text-slate-800 leading-snug mt-0.5">3 Trà Đào Cam Sả (Ít đá), 2 Trà Sữa Trân Châu Đường Đen (70% đường)</p>
+                  </div>
+                </div>
+
+                <!-- Khung xem trước ảnh chụp -->
+                <div class="mt-3">
+                  <div id="emptyPhotoPlaceholder" class="h-40 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-center p-4">
+                    <svg class="w-8 h-8 text-slate-400 mb-1.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                    </svg>
+                    <p class="text-xs font-semibold text-slate-600">Chưa có ảnh xác minh (Bắt buộc chụp ảnh)</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Chỉ cho phép chụp trực tiếp từ Camera</p>
+                  </div>
+
+                  <!-- Ảnh đã chụp kèm Watermark thời gian & GPS -->
+                  <div id="capturedPhotoPreview" class="hidden relative h-44 rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-800">
+                    <!-- Minh họa ảnh chụp kiện hàng thực tế -->
+                    <svg viewBox="0 0 360 200" class="w-full h-full object-cover">
+                      <defs>
+                        <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#FDE68A" />
+                          <stop offset="100%" stop-color="#F59E0B" stop-opacity="0.35" />
+                        </linearGradient>
+                        <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#CBD5E1" />
+                          <stop offset="100%" stop-color="#94A3B8" />
+                        </linearGradient>
+                      </defs>
+                      <!-- Tường nhà & Cửa gỗ -->
+                      <rect width="360" height="135" fill="url(#wallGrad)" />
+                      <rect x="35" y="15" width="110" height="120" fill="#78350F" rx="3" />
+                      <rect x="43" y="23" width="94" height="104" fill="#92400E" />
+                      <circle cx="127" cy="78" r="4" fill="#FBBF24" />
+                      <!-- Số nhà -->
+                      <rect x="175" y="32" width="85" height="28" rx="4" fill="#1E3A8A" stroke="#FFFFFF" stroke-width="1.5" />
+                      <text id="photoHouseNumber" x="217" y="50" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="700">123 LÊ LỢI</text>
+                      <!-- Nền gạch hiên nhà -->
+                      <rect y="135" width="360" height="65" fill="url(#floorGrad)" />
+                      <!-- Túi/Thùng nước giải khát giao tận tay -->
+                      <g transform="translate(152, 84)">
+                        <polygon points="0,22 48,6 96,22 48,38" fill="#0284C7" />
+                        <polygon points="0,22 48,38 48,78 0,62" fill="#0369A1" />
+                        <polygon points="48,38 96,22 96,62 48,78" fill="#075985" />
+                        <!-- Ly nước giải khát đặt cạnh thùng -->
+                        <polygon points="104,35 124,35 121,72 107,72" fill="#FDE047" stroke="#FFFFFF" stroke-width="1.5" />
+                        <line x1="117" y1="22" x2="114" y2="55" stroke="#EF4444" stroke-width="2.5" />
+                        <polygon points="56,40 84,30 84,50 56,60" fill="#FFFFFF" />
+                        <line x1="60" y1="45" x2="80" y2="38" stroke="#334155" stroke-width="2" />
+                      </g>
+                    </svg>
+                    <!-- Dấu Watermark chống gian lận góc dưới ảnh -->
+                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 py-2 text-white">
+                      <div class="flex items-center justify-between text-[10px] font-mono">
+                        <span class="text-emerald-400 font-bold" id="watermarkOrderLabel">✓ VERIFIED POD • Chị Lan Anh</span>
+                        <span id="watermarkTime">26/11/2026 22:39:15</span>
+                      </div>
+                      <div id="watermarkGps" class="text-[10px] font-mono text-slate-200 truncate">
+                        GPS: 10.77320° N, 106.70110° E • Quận 1, TP.HCM
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Nút Chụp ảnh xác minh -->
+                <button
+                  id="openCameraBtn"
+                  onclick="openSimulatedCamera()"
+                  class="mt-3 w-full py-2.5 rounded-full border border-slate-300 hover:bg-slate-50 text-slate-800 font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                  </svg>
+                  <span id="openCameraBtnText">Chụp ảnh xác minh</span>
+                </button>
+
+                <!-- Nút Hoàn thành đơn (Bị khóa cho đến khi chụp ảnh) -->
+                <button
+                  id="completeOrderSubmitBtn"
+                  disabled
+                  onclick="submitOrderCompletion()"
+                  class="mt-2.5 w-full py-3 rounded-full bg-slate-200 text-slate-400 font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition cursor-not-allowed">
+                  <span id="completeOrderBtnText">HOÀN THÀNH ĐƠN (+5.000 VNĐ)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 6B. MODAL CHẤM CÔNG VÀO CA (NHẬP HỌ TÊN & SĐT NHÂN VIÊN) -->
+            <div id="checkInModal" class="hidden absolute inset-0 bg-slate-900/65 z-40 flex items-center justify-center p-4 animate-fadeIn">
+              <div class="bg-white rounded-3xl w-full p-5 shadow-2xl">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">Điểm danh đầu ca</span>
+                  <button type="button" onclick="closeCheckInModal()" class="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <h3 class="text-base font-extrabold text-slate-900">Thông Tin Nhân Viên Vào Ca</h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">Vui lòng nhập đầy đủ họ tên và SĐT để bắt đầu ghi nhận GPS & tính lương theo ly.</p>
+
+                <form id="checkInForm" onsubmit="confirmCheckInSubmit(event)" class="mt-3.5 space-y-3">
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <label class="text-[11px] font-bold text-slate-700">Họ và tên nhân viên *</label>
+                      <button type="button" onclick="fillSampleEmployee()" class="text-[10.5px] font-semibold text-blue-600 hover:underline cursor-pointer">Điền nhanh mẫu</button>
+                    </div>
+                    <input
+                      id="empNameInput"
+                      type="text"
+                      placeholder="VD: Nguyễn Văn Hùng"
+                      class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" />
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Số điện thoại liên hệ *</label>
+                    <input
+                      id="empPhoneInput"
+                      type="tel"
+                      placeholder="VD: 0901 234 567"
+                      class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" />
+                  </div>
+
+                  <p id="checkInErrorMsg" class="hidden text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5"></p>
+
+                  <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[10.5px] text-slate-600 flex items-center justify-between">
+                    <span>📍 Tọa độ điểm danh:</span>
+                    <span id="checkInGpsPreview" class="font-mono font-semibold text-slate-800">10.77250, 106.69800</span>
+                  </div>
+
+                  <div class="pt-1 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onclick="closeCheckInModal()"
+                      class="flex-1 py-2.5 rounded-full border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs cursor-pointer">
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      class="flex-[2] py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 cursor-pointer">
+                      XÁC NHẬN VÀO CA
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- 7. GIAO DIỆN CAMERA MÔ PHỎNG TOÀN MÀN HÌNH ĐIỆN THOẠI -->
+            <div id="cameraViewfinderOverlay" class="hidden absolute inset-0 bg-black z-40 flex flex-col justify-between text-white animate-fadeIn">
+              <!-- Thanh trên Camera -->
+              <div class="px-4 pt-8 pb-3 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent">
+                <button onclick="closeSimulatedCamera()" class="px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 text-xs font-medium cursor-pointer">
+                  Hủy
+                </button>
+                <span class="text-xs font-semibold tracking-wide text-amber-300">CAMERA XÁC MINH POD</span>
+                <span class="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded">1024px • 70%</span>
+              </div>
+
+              <!-- Khung ngắm trực tiếp (Live Viewfinder) -->
+              <div class="relative flex-1 mx-3 my-2 rounded-2xl overflow-hidden border border-white/25 bg-slate-900 flex items-center justify-center">
+                <!-- Cảnh vật trực tiếp qua ống kính -->
+                <svg viewBox="0 0 360 360" class="w-full h-full object-cover">
+                  <rect width="360" height="230" fill="#FDE68A" />
+                  <rect x="35" y="30" width="120" height="200" fill="#78350F" />
+                  <rect x="45" y="40" width="100" height="180" fill="#92400E" />
+                  <circle cx="132" cy="135" r="5" fill="#FBBF24" />
+                  <rect x="175" y="65" width="100" height="32" rx="4" fill="#1E3A8A" stroke="#FFFFFF" stroke-width="2" />
+                  <text id="cameraHouseLabel" x="225" y="85" text-anchor="middle" fill="#FFFFFF" font-size="11.5" font-weight="700">123 LÊ LỢI</text>
+                  <rect y="230" width="360" height="130" fill="#94A3B8" />
+                  <!-- Thùng & ly nước giải khát trước cửa -->
+                  <g transform="translate(138, 162)">
+                    <polygon points="0,25 55,5 110,25 55,45" fill="#0284C7" />
+                    <polygon points="0,25 55,45 55,95 0,75" fill="#0369A1" />
+                    <polygon points="55,45 110,25 110,75 55,95" fill="#075985" />
+                    <polygon points="118,40 144,40 140,90 122,90" fill="#FDE047" stroke="#FFFFFF" stroke-width="2" />
+                    <line x1="136" y1="22" x2="131" y2="65" stroke="#EF4444" stroke-width="3" />
+                    <polygon points="65,48 95,38 95,60 65,70" fill="#FFFFFF" />
+                  </g>
+                </svg>
+
+                <!-- Khung lấy nét vàng giữa màn hình -->
+                <div class="absolute w-36 h-36 border-2 border-amber-400/80 rounded-xl pointer-events-none flex items-center justify-center">
+                  <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+                </div>
+
+                <!-- Watermark trực tiếp trên khung ngắm -->
+                <div class="absolute bottom-3 left-3 right-3 bg-black/65 backdrop-blur-xs rounded-lg p-2 font-mono text-[10px] leading-relaxed border border-white/15">
+                  <div class="text-amber-300 font-bold" id="liveCamTimestamp">Thời gian: 26/11/2026 22:39:15</div>
+                  <div class="text-slate-200" id="liveCamCoords">Tọa độ: 10.77250, 106.69800</div>
+                </div>
+              </div>
+
+              <!-- Nút bấm chụp ảnh (Shutter Button) -->
+              <div class="py-5 flex flex-col items-center justify-center bg-black">
+                <button
+                  onclick="captureProofPhoto()"
+                  title="Chụp ảnh"
+                  class="w-16 h-16 rounded-full border-4 border-white p-1 flex items-center justify-center active:scale-90 transition cursor-pointer">
+                  <div class="w-full h-full rounded-full bg-white hover:bg-slate-200"></div>
+                </button>
+                <span class="text-[11px] text-slate-400 mt-2">Bấm để chụp ảnh giao hàng</span>
+              </div>
+            </div>
+
+            <!-- 8. MODAL TỔNG KẾT CA LÀM VIỆC KHI CHECK-OUT -->
+            <div id="shiftSummaryModal" class="hidden absolute inset-0 bg-slate-900/65 z-40 flex items-center justify-center p-4 animate-fadeIn">
+              <div class="bg-white rounded-3xl w-full p-5 shadow-2xl text-center">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2.5">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 class="text-base font-extrabold text-slate-900">Tổng Kết Ca Giao Hàng</h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">Đã dừng GPS nền và lưu bảng lương ca làm</p>
+
+                <div class="mt-3.5 bg-slate-50 rounded-2xl p-3.5 space-y-2 text-left border border-slate-200/80 text-xs">
+                  <div class="flex justify-between gap-2">
+                    <span class="text-slate-500 shrink-0">Nhân viên:</span>
+                    <span id="summaryEmployeeInfo" class="font-bold text-slate-900 text-right truncate">Nguyễn Văn Hùng (0901 234 567)</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-500">Thời gian làm việc:</span>
+                    <span id="summaryDuration" class="font-bold text-slate-800">00 phút 45 giây</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-500">Số điểm GPS hành trình:</span>
+                    <span id="summaryGpsPoints" class="font-bold text-blue-600">5 điểm</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-500">Số đơn hoàn thành:</span>
+                    <span id="summaryOrdersCount" class="font-bold text-slate-800">2 đơn</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-500">Tổng số ly đã giao:</span>
+                    <span id="summaryCupsCount" class="font-bold text-amber-700">11 ly × 1.000đ</span>
+                  </div>
+                  <div class="pt-2 border-t border-slate-200 flex justify-between items-center">
+                    <span class="font-semibold text-slate-700">Tổng lương ca này:</span>
+                    <span id="summaryEarnings" class="text-base font-extrabold text-emerald-600">11.000 VNĐ</span>
+                  </div>
+                </div>
+
+                <button
+                  onclick="closeShiftSummaryModal()"
+                  class="mt-4 w-full py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition cursor-pointer">
+                  Đóng bảng tổng kết
+                </button>
+              </div>
+            </div>
+
+            <!-- 9. SNACKBAR THÔNG BÁO DƯỚI ĐÁY ĐIỆN THOẠI -->
+            <div id="phoneSnackBar" class="pointer-events-none absolute bottom-3 left-3 right-3 z-50 transition-all duration-300 translate-y-20 opacity-0">
+              <div id="snackBarInner" class="bg-slate-900 text-white text-xs font-medium px-3.5 py-2.5 rounded-xl shadow-lg flex items-center gap-2">
+                <span id="snackBarIcon" class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span id="snackBarText" class="leading-snug">Chấm công VÀO CA thành công!</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- CỘT PHẢI: HƯỚNG DẪN THAO TÁC & LIVE SUPABASE DATABASE INSPECTOR (7 cột trên desktop) -->
+      <div class="lg:col-span-7 space-y-5">
+        <!-- Thẻ 1: Quy tắc chấm công & Cách tính lương theo số ly nước -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">Tính lương theo ly</span>
+                <h3 class="text-sm font-bold text-slate-900">Đơn giá 1.000 VNĐ / 1 ly giao thành công</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Nhân viên bắt buộc nhập Họ tên + SĐT khi vào ca. Tiền công tính trực tiếp theo tổng số ly khách đặt trên mỗi đơn hoàn thành.</p>
+            </div>
+          </div>
+
+          <!-- 3 Ví dụ minh họa tính lương theo số ly -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90">
+              <div class="text-[11px] font-semibold text-slate-500">Đơn lẻ 1 ly</div>
+              <div class="text-sm font-extrabold text-slate-800 mt-0.5">1.000 VNĐ</div>
+              <div class="text-[10.5px] text-slate-500 mt-0.5">1 ly × 1.000đ</div>
+            </div>
+            <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200">
+              <div class="text-[11px] font-bold text-emerald-800">Ví dụ: Chị A đặt 5 ly</div>
+              <div class="text-sm font-extrabold text-emerald-700 mt-0.5">5.000 VNĐ (5k)</div>
+              <div class="text-[10.5px] text-emerald-700/90 mt-0.5">5 ly × 1.000đ / ly</div>
+            </div>
+            <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200">
+              <div class="text-[11px] font-bold text-blue-800">Đơn nhóm 12 ly</div>
+              <div class="text-sm font-extrabold text-blue-700 mt-0.5">12.000 VNĐ (12k)</div>
+              <div class="text-[10.5px] text-blue-700/90 mt-0.5">12 ly × 1.000đ / ly</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thẻ 2: Công cụ Chủ Shop (Tạo thêm đơn nước mới & Chống Fake GPS) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4">
+          <!-- Tạo thêm đơn nước mới đẩy xuống điện thoại shipper -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Điều phối đơn nước giải khát</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Tạo đơn mới kèm số lượng ly và đẩy trực tiếp xuống điện thoại của Shipper.</p>
+            </div>
+            <button
+              onclick="toggleNewOrderForm()"
+              class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition shrink-0 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              + Tạo thêm đơn nước mới
+            </button>
+          </div>
+
+          <!-- Form nhập nhanh đơn nước mới (ẩn/hiện khi bấm nút) -->
+          <form id="newOrderForm" onsubmit="submitNewBeverageOrder(event)" class="hidden bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3 animate-fadeIn">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800 uppercase tracking-wide">Nhập thông tin đơn nước mới</span>
+              <button type="button" onclick="fillSampleNewOrder()" class="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer">Điền nhanh mẫu thử</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tên khách hàng *</label>
+                <input id="inputCustomerName" type="text" required placeholder="VD: Chị Ngọc Hân" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Số điện thoại *</label>
+                <input id="inputCustomerPhone" type="text" required placeholder="VD: 0908 777 666" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:outline-none focus:border-blue-500" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Địa chỉ giao hàng *</label>
+              <input id="inputCustomerAddress" type="text" required placeholder="VD: 88 Pasteur, P. Bến Nghé, Q.1" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:outline-none focus:border-blue-500" />
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+              <div class="sm:col-span-3">
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Chi tiết món nước (Món, số lượng, đá/đường) *</label>
+                <input id="inputOrderItems" type="text" required oninput="autoSyncCupCountFromItems()" placeholder="VD: 4 Trà Sữa Oolong Nhài, 2 Trà Đào Cam Sả" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tổng số ly *</label>
+                <input id="inputCupCount" type="number" min="1" max="200" value="1" required class="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-bold text-emerald-700 focus:outline-none focus:border-blue-500" />
+              </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-1">
+              <button type="button" onclick="toggleNewOrderForm()" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-200/70 cursor-pointer">Hủy</button>
+              <button type="submit" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer">Đẩy đơn xuống App Shipper</button>
+            </div>
+          </form>
+
+          <!-- Công tắc giả lập Fake GPS -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 uppercase">Chống gian lận</span>
+                <h3 class="text-sm font-bold text-slate-900">Giả lập Fake GPS (Vị trí ảo)</h3>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Mô phỏng trường hợp nhân viên dùng phần mềm giả lập tọa độ (<code class="font-mono text-pink-600 bg-pink-50 px-1 rounded">pos.isMocked == true</code>). Khi bật, app sẽ chặn chấm công và cảnh báo ngay lập tức.
+              </p>
+            </div>
+
+            <!-- Công tắc Toggle Switch -->
+            <label class="inline-flex items-center gap-3 cursor-pointer shrink-0">
+              <input type="checkbox" id="fakeGpsToggle" onchange="onFakeGpsToggleChange()" class="sr-only peer" />
+              <div class="relative w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+              <span id="fakeGpsStatusText" class="text-xs font-bold text-slate-500 w-16">Đang TẮT</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Thẻ 3: Live Supabase Database Inspector -->
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+          <div class="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <h3 class="text-sm font-bold tracking-tight">Supabase Database Trực Tiếp (PostgreSQL)</h3>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400">Trigger: trg_order_completed (1.000đ × số ly)</span>
+          </div>
+
+          <!-- Các Tab chuyển bảng dữ liệu -->
+          <div class="px-4 pt-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2 overflow-x-auto">
+            <button
+              id="dbTabBtn_shifts"
+              onclick="switchDbTab('shifts')"
+              class="px-3.5 py-2 text-xs font-bold rounded-t-lg border-t border-x border-slate-200 bg-white text-blue-600 -mb-px flex items-center gap-1.5 cursor-pointer">
+              <span>shifts</span>
+              <span id="countBadge_shifts" class="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-100 text-blue-700">0</span>
+            </button>
+            <button
+              id="dbTabBtn_location_logs"
+              onclick="switchDbTab('location_logs')"
+              class="px-3.5 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer">
+              <span>location_logs</span>
+              <span id="countBadge_location_logs" class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 text-slate-700">0</span>
+            </button>
+            <button
+              id="dbTabBtn_orders"
+              onclick="switchDbTab('orders')"
+              class="px-3.5 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer">
+              <span>orders</span>
+              <span id="countBadge_orders" class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 text-slate-700">3</span>
+            </button>
+          </div>
+
+          <!-- Vùng hiển thị bảng dữ liệu -->
+          <div class="p-4 overflow-x-auto db-scroll max-h-[300px]">
+            <!-- Bảng shifts -->
+            <div id="dbTable_shifts">
+              <table class="w-full text-left border-collapse text-xs font-mono">
+                <thead>
+                  <tr class="border-b border-slate-200 text-[11px] text-slate-500">
+                    <th class="py-2 pr-3">id</th>
+                    <th class="py-2 px-3">employee_name</th>
+                    <th class="py-2 px-3">employee_phone</th>
+                    <th class="py-2 px-3">check_in</th>
+                    <th class="py-2 px-3">check_out</th>
+                    <th class="py-2 px-3 text-right">total_cups</th>
+                    <th class="py-2 pl-3 text-right">total_earnings</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody_shifts" class="divide-y divide-slate-100">
+                  <tr>
+                    <td colspan="7" class="py-6 text-center text-slate-400 font-sans">Chưa có ca làm nào. Hãy bấm "CHẤM CÔNG VÀO CA" trên điện thoại.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Bảng location_logs -->
+            <div id="dbTable_location_logs" class="hidden">
+              <table class="w-full text-left border-collapse text-xs font-mono">
+                <thead>
+                  <tr class="border-b border-slate-200 text-[11px] text-slate-500">
+                    <th class="py-2 pr-3">id</th>
+                    <th class="py-2 px-3">shift_id</th>
+                    <th class="py-2 px-3">lat</th>
+                    <th class="py-2 px-3">lng</th>
+                    <th class="py-2 pl-3">recorded_at</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody_location_logs" class="divide-y divide-slate-100">
+                  <tr>
+                    <td colspan="5" class="py-6 text-center text-slate-400 font-sans">Chưa có nhật ký tọa độ GPS.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Bảng orders -->
+            <div id="dbTable_orders" class="hidden">
+              <table class="w-full text-left border-collapse text-xs font-mono">
+                <thead>
+                  <tr class="border-b border-slate-200 text-[11px] text-slate-500">
+                    <th class="py-2 pr-3">customer_name</th>
+                    <th class="py-2 px-3">customer_phone</th>
+                    <th class="py-2 px-3">order_items</th>
+                    <th class="py-2 px-3 text-right">cups</th>
+                    <th class="py-2 px-3 text-right">commission</th>
+                    <th class="py-2 px-3">status</th>
+                    <th class="py-2 pl-3">proof_image</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody_orders" class="divide-y divide-slate-100">
+                  <!-- Render bởi JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal xem phóng to ảnh xác minh khi bấm vào URL trong Database Inspector -->
+  <div id="inspectorPhotoModal" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4" onclick="closeInspectorPhotoModal()">
+    <div class="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-3">
+        <h4 id="inspectorPhotoTitle" class="text-sm font-bold text-slate-900">Ảnh xác minh POD trên Storage</h4>
+        <button onclick="closeInspectorPhotoModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer">&times;</button>
+      </div>
+      <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-900 relative">
+        <svg viewBox="0 0 360 200" class="w-full h-auto">
+          <rect width="360" height="135" fill="#FDE68A" />
+          <rect x="35" y="15" width="110" height="120" fill="#78350F" rx="3" />
+          <rect x="43" y="23" width="94" height="104" fill="#92400E" />
+          <rect x="175" y="32" width="85" height="28" rx="4" fill="#1E3A8A" stroke="#FFFFFF" stroke-width="1.5" />
+          <text id="modalHouseLabel" x="217" y="50" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="700">123 LÊ LỢI</text>
+          <rect y="135" width="360" height="65" fill="#94A3B8" />
+          <g transform="translate(155, 88)">
+            <polygon points="0,20 45,5 90,20 45,35" fill="#D97706" />
+            <polygon points="0,20 45,35 45,75 0,60" fill="#B45309" />
+            <polygon points="45,35 90,20 90,60 45,75" fill="#92400E" />
+            <line x1="22" y1="12" x2="67" y2="27" stroke="#FEF3C7" stroke-width="5" />
+          </g>
+        </svg>
+        <div class="bg-black/85 text-white px-3 py-2 font-mono text-[11px]" id="modalPhotoMeta">
+          Thời gian & GPS xác minh
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * =========================================================================
+     * DỮ LIỆU TỌA ĐỘ LỘ TRÌNH MẪU (QUẬN 1 - QUẬN 3 TP.HCM) & ĐƠN HÀNG BAN ĐẦU
+     * Đơn giá lương: 1.000 VNĐ / 1 ly giao thành công
+     * =========================================================================
+     */
+    const CUP_RATE_VND = 1000;
+
+    const ROUTE_WAYPOINTS = [
+      { x: 150, y: 154, lat: 10.77250, lng: 106.69800 },
+      { x: 182, y: 146, lat: 10.77310, lng: 106.69950 },
+      { x: 215, y: 137, lat: 10.77380, lng: 106.70110 },
+      { x: 252, y: 128, lat: 10.77450, lng: 106.70280 },
+      { x: 263, y: 160, lat: 10.77320, lng: 106.70340 },
+      { x: 210, y: 176, lat: 10.77120, lng: 106.70080 },
+      { x: 140, y: 193, lat: 10.77050, lng: 106.69750 },
+      { x: 102, y: 185, lat: 10.77180, lng: 106.69320 },
+      { x: 84,  y: 142, lat: 10.77460, lng: 106.69050 },
+      { x: 68,  y: 102, lat: 10.77790, lng: 106.68820 },
+      { x: 125, y: 68,  lat: 10.77920, lng: 106.69380 },
+      { x: 205, y: 80,  lat: 10.77800, lng: 106.69920 }
+    ];
+
+    const INITIAL_ORDERS = [
+      {
+        id: 'ord-01',
+        shift_id: null,
+        customer_name: 'Chị Lan Anh',
+        customer_phone: '0909 123 456',
+        customer_address: '123 Lê Lợi, P. Bến Thành, Q.1',
+        order_items: '3 Trà Đào Cam Sả (Ít đá), 2 Trà Sữa Trân Châu Đường Đen (70% đường)',
+        cup_count: 5,
+        short_house: '123 LÊ LỢI',
+        status: 'pending',
+        proof_image_url: null,
+        proof_meta: null,
+        completed_at: null,
+        commission: 5000,
+        mapPinId: 'mapPinOrder1'
+      },
+      {
+        id: 'ord-02',
+        shift_id: null,
+        customer_name: 'Anh Minh Tuấn',
+        customer_phone: '0938 654 321',
+        customer_address: '456 Nguyễn Huệ, P. Bến Nghé, Q.1',
+        order_items: '4 Trà Chanh Giã Tay, 2 Nước Ép Cam Tươi (Không đường)',
+        cup_count: 6,
+        short_house: '456 NGUYỄN HUỆ',
+        status: 'pending',
+        proof_image_url: null,
+        proof_meta: null,
+        completed_at: null,
+        commission: 6000,
+        mapPinId: 'mapPinOrder2'
+      },
+      {
+        id: 'ord-03',
+        shift_id: null,
+        customer_name: 'Cô Thanh Thảo',
+        customer_phone: '0918 888 999',
+        customer_address: '789 Cách Mạng Tháng 8, Q.3',
+        order_items: '5 Ly Nước Mía Sầu Riêng (Ít đá), 2 Trà Xanh Chanh Dây',
+        cup_count: 7,
+        short_house: '789 CMT8',
+        status: 'pending',
+        proof_image_url: null,
+        proof_meta: null,
+        completed_at: null,
+        commission: 7000,
+        mapPinId: 'mapPinOrder3'
+      }
+    ];
+
+    const appState = {
+      currentShiftId: null,
+      shiftStartTime: null,
+      waypointIndex: 0,
+      routePoints: [],
+      mapZoom: 1,
+      autoDriveTimer: null,
+      snackBarTimer: null,
+      fakeGpsEnabled: false,
+      activeOrderId: null,
+      capturedPhotoData: null,
+      db: {
+        shifts: [],
+        location_logs: [],
+        orders: JSON.parse(JSON.stringify(INITIAL_ORDERS))
+      }
+    };
+
+    function getCurrentShift() {
+      if (!appState.currentShiftId) return null;
+      return appState.db.shifts.find(s => s.id === appState.currentShiftId) || null;
+    }
+
+    /**
+     * =========================================================================
+     * TIỆN ÍCH ĐỊNH DẠNG THỜI GIAN, TIỀN TỆ & THÔNG BÁO SNACKBAR
+     * =========================================================================
+     */
+    function formatVnd(amount) {
+      return Number(amount || 0).toLocaleString('vi-VN');
+    }
+
+    function formatTimeNow(dateObj = new Date()) {
+      return dateObj.toTimeString().slice(0, 8);
+    }
+
+    function formatFullDateTime(dateObj = new Date()) {
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const yyyy = dateObj.getFullYear();
+      return `${dd}/${mm}/${yyyy} ${formatTimeNow(dateObj)}`;
+    }
+
+    function updatePhoneClock() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      const clockEl = document.getElementById('phoneClock');
+      if (clockEl) clockEl.textContent = `${hh}:${min}`;
+    }
+
+    function showSnackBar(message, type = 'success') {
+      const bar = document.getElementById('phoneSnackBar');
+      const icon = document.getElementById('snackBarIcon');
+      const text = document.getElementById('snackBarText');
+      if (!bar || !icon || !text) return;
+
+      text.textContent = message;
+      icon.className = 'w-2 h-2 rounded-full shrink-0 ' + (
+        type === 'error' ? 'bg-red-400' :
+        type === 'warning' ? 'bg-amber-400' :
+        'bg-emerald-400'
+      );
+
+      bar.classList.remove('translate-y-20', 'opacity-0');
+      bar.classList.add('translate-y-0', 'opacity-100');
+
+      if (appState.snackBarTimer) clearTimeout(appState.snackBarTimer);
+      appState.snackBarTimer = setTimeout(() => {
+        bar.classList.remove('translate-y-0', 'opacity-100');
+        bar.classList.add('translate-y-20', 'opacity-0');
+      }, 3200);
+    }
+
+    /**
+     * =========================================================================
+     * CHẤM CÔNG VÀO CA (BẮT BUỘC NHẬP HỌ TÊN & SĐT NHÂN VIÊN) / KẾT THÚC CA
+     * =========================================================================
+     */
+    function handleShiftToggle() {
+      if (appState.currentShiftId) {
+        checkOutShift();
+      } else {
+        openCheckInModal();
+      }
+    }
+
+    function openCheckInModal() {
+      if (appState.fakeGpsEnabled) {
+        showSnackBar('CẢNH BÁO: Phát hiện Fake GPS! Không thể chấm công.', 'error');
+        return;
+      }
+
+      const startWp = ROUTE_WAYPOINTS[appState.waypointIndex];
+      document.getElementById('checkInGpsPreview').textContent = `${startWp.lat.toFixed(5)}, ${startWp.lng.toFixed(5)}`;
+      document.getElementById('checkInErrorMsg').classList.add('hidden');
+      document.getElementById('checkInModal').classList.remove('hidden');
+    }
+
+    function closeCheckInModal() {
+      document.getElementById('checkInModal').classList.add('hidden');
+    }
+
+    function fillSampleEmployee() {
+      document.getElementById('empNameInput').value = 'Nguyễn Văn Hùng';
+      document.getElementById('empPhoneInput').value = '0901 234 567';
+      document.getElementById('checkInErrorMsg').classList.add('hidden');
+    }
+
+    function confirmCheckInSubmit(event) {
+      event.preventDefault();
+      if (appState.fakeGpsEnabled) {
+        closeCheckInModal();
+        showSnackBar('CẢNH BÁO: Phát hiện Fake GPS! Không thể chấm công.', 'error');
+        return;
+      }
+
+      const empName = document.getElementById('empNameInput').value.trim();
+      const empPhone = document.getElementById('empPhoneInput').value.trim();
+      const errorEl = document.getElementById('checkInErrorMsg');
+
+      if (!empName || empName.length < 2) {
+        errorEl.textContent = 'Vui lòng nhập đầy đủ Họ và tên nhân viên!';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      const cleanPhone = empPhone.replace(/[\s.-]/g, '');
+      if (!/^0\d{8,10}$/.test(cleanPhone)) {
+        errorEl.textContent = 'Vui lòng nhập Số điện thoại hợp lệ (10–11 chữ số, bắt đầu bằng 0)!';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      errorEl.classList.add('hidden');
+      closeCheckInModal();
+
+      const now = new Date();
+      const shiftId = 'sh-' + String(appState.db.shifts.length + 1).padStart(2, '0');
+      const startWp = ROUTE_WAYPOINTS[appState.waypointIndex];
+
+      appState.currentShiftId = shiftId;
+      appState.shiftStartTime = now;
+      appState.routePoints = [{ x: startWp.x, y: startWp.y }];
+
+      appState.db.shifts.unshift({
+        id: shiftId,
+        employee_name: empName,
+        employee_phone: empPhone,
+        check_in_time: formatTimeNow(now),
+        check_in_lat: startWp.lat,
+        check_in_lng: startWp.lng,
+        check_out_time: null,
+        total_orders: 0,
+        total_cups: 0,
+        total_earnings: 0
+      });
+
+      // Ghi log GPS đầu tiên khi Check-in
+      appState.db.location_logs.unshift({
+        id: appState.db.location_logs.length + 1,
+        shift_id: shiftId,
+        lat: startWp.lat.toFixed(5),
+        lng: startWp.lng.toFixed(5),
+        recorded_at: formatTimeNow(now)
+      });
+
+      updateShiftAndWorkerUI();
+      updateMapVisuals();
+      renderOrdersList();
+      renderDatabaseInspector();
+      showSnackBar(`Xin chào ${empName}! Đã chấm công VÀO CA.`, 'success');
+    }
+
+    function checkOutShift() {
+      const shift = getCurrentShift();
+      if (!shift) return;
+
+      if (appState.autoDriveTimer) {
+        toggleAutoDrive();
+      }
+
+      const now = new Date();
+      shift.check_out_time = formatTimeNow(now);
+
+      // Tính thời lượng làm việc
+      const diffSec = Math.max(1, Math.floor((now - appState.shiftStartTime) / 1000));
+      const mins = String(Math.floor(diffSec / 60)).padStart(2, '0');
+      const secs = String(diffSec % 60).padStart(2, '0');
+
+      const gpsCount = appState.db.location_logs.filter(l => l.shift_id === shift.id).length;
+
+      // Điền thông tin vào Modal Tổng Kết Ca
+      document.getElementById('summaryEmployeeInfo').textContent = `${shift.employee_name} (${shift.employee_phone})`;
+      document.getElementById('summaryDuration').textContent = `${mins} phút ${secs} giây`;
+      document.getElementById('summaryGpsPoints').textContent = `${gpsCount} điểm`;
+      document.getElementById('summaryOrdersCount').textContent = `${shift.total_orders} đơn`;
+      document.getElementById('summaryCupsCount').textContent = `${shift.total_cups} ly × 1.000đ`;
+      document.getElementById('summaryEarnings').textContent = `${formatVnd(shift.total_earnings)} VNĐ`;
+
+      document.getElementById('shiftSummaryModal').classList.remove('hidden');
+
+      appState.currentShiftId = null;
+      appState.shiftStartTime = null;
+
+      updateShiftAndWorkerUI();
+      renderOrdersList();
+      renderDatabaseInspector();
+    }
+
+    function closeShiftSummaryModal() {
+      document.getElementById('shiftSummaryModal').classList.add('hidden');
+      showSnackBar('Đã kết thúc ca làm việc và lưu bảng lương.', 'info');
+    }
+
+    function updateShiftAndWorkerUI() {
+      const shift = getCurrentShift();
+      const isWorking = Boolean(shift);
+
+      // Header badge
+      const headerBadge = document.getElementById('headerStatusBadge');
+      if (isWorking) {
+        headerBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+        headerBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>${shift.employee_name} (${shift.id})`;
+      } else {
+        headerBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200';
+        headerBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-400"></span>Chưa vào ca';
+      }
+
+      // Foreground Notification
+      const fgNotif = document.getElementById('foregroundNotification');
+      if (isWorking) {
+        fgNotif.classList.remove('hidden');
+        const gpsCount = appState.db.location_logs.filter(l => l.shift_id === shift.id).length;
+        document.getElementById('fgGpsCounter').textContent = `GPS: ${gpsCount} điểm`;
+      } else {
+        fgNotif.classList.add('hidden');
+      }
+
+      // Nút Vào Ca / Ra Ca
+      const btn = document.getElementById('shiftActionBtn');
+      const btnIcon = document.getElementById('shiftBtnIcon');
+      const btnLabel = document.getElementById('shiftBtnLabel');
+      if (isWorking) {
+        btn.className = 'w-full h-10 rounded-full bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-bold text-sm tracking-wide shadow-md shadow-red-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer';
+        btnIcon.innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2" />';
+        btnLabel.textContent = 'KẾT THÚC CA LÀM';
+      } else {
+        btn.className = 'w-full h-10 rounded-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-sm tracking-wide shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer';
+        btnIcon.innerHTML = '<path d="M8 5v14l11-7z" />';
+        btnLabel.textContent = 'CHẤM CÔNG VÀO CA';
+      }
+
+      // Chip thu nhập & Banner thông tin nhân viên
+      const currentCups = shift ? shift.total_cups : 0;
+      const currentEarnings = shift ? shift.total_earnings : 0;
+      document.getElementById('chipText').textContent = `${formatVnd(currentEarnings)} đ (${currentCups} ly)`;
+
+      const workerInfoEl = document.getElementById('workerInfoDisplay');
+      if (isWorking) {
+        workerInfoEl.className = 'flex items-center gap-1.5 text-slate-800 font-bold truncate';
+        workerInfoEl.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+          <span class="truncate">${shift.employee_name} • ${shift.employee_phone}</span>
+        `;
+      } else {
+        workerInfoEl.className = 'flex items-center gap-1.5 text-slate-500 font-medium truncate';
+        workerInfoEl.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
+          <span class="truncate">Chưa điểm danh nhân viên</span>
+        `;
+      }
+    }
+
+    /**
+     * =========================================================================
+     * BẢN ĐỒ GOOGLE MAPS & DI CHUYỂN GPS
+     * =========================================================================
+     */
+    function simulateStepMovement() {
+      if (appState.fakeGpsEnabled) {
+        if (appState.autoDriveTimer) toggleAutoDrive();
+        showSnackBar('CẢNH BÁO: Tọa độ giả lập (Fake GPS) bị từ chối!', 'error');
+        return;
+      }
+
+      appState.waypointIndex = (appState.waypointIndex + 1) % ROUTE_WAYPOINTS.length;
+      const wp = ROUTE_WAYPOINTS[appState.waypointIndex];
+
+      if (appState.currentShiftId) {
+        appState.routePoints.push({ x: wp.x, y: wp.y });
+        appState.db.location_logs.unshift({
+          id: appState.db.location_logs.length + 1,
+          shift_id: appState.currentShiftId,
+          lat: wp.lat.toFixed(5),
+          lng: wp.lng.toFixed(5),
+          recorded_at: formatTimeNow()
+        });
+        updateShiftAndWorkerUI();
+        renderDatabaseInspector();
+      } else {
+        showSnackBar('Mẹo: Bấm "VÀO CA" để hệ thống ghi lại đường đi lên bản đồ.', 'info');
+      }
+
+      updateMapVisuals();
+    }
+
+    function toggleAutoDrive() {
+      const dot = document.getElementById('autoDriveDot');
+      const label = document.getElementById('autoDriveLabel');
+
+      if (appState.autoDriveTimer) {
+        clearInterval(appState.autoDriveTimer);
+        appState.autoDriveTimer = null;
+        dot.className = 'w-2 h-2 rounded-full bg-slate-400';
+        label.textContent = 'Tự động chạy xe';
+      } else {
+        simulateStepMovement();
+        appState.autoDriveTimer = setInterval(simulateStepMovement, 1800);
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-ping';
+        label.textContent = 'Đang chạy xe...';
+      }
+    }
+
+    function zoomMap(delta) {
+      appState.mapZoom = Math.min(1.6, Math.max(0.85, appState.mapZoom + delta));
+      const svg = document.getElementById('googleMapSvg');
+      if (svg) svg.style.transform = `scale(${appState.mapZoom})`;
+    }
+
+    function recenterMap() {
+      appState.mapZoom = 1;
+      const svg = document.getElementById('googleMapSvg');
+      if (svg) svg.style.transform = 'scale(1)';
+      showSnackBar('Đã căn giữa về vị trí xe hiện tại.', 'info');
+    }
+
+    function updateMapVisuals() {
+      const wp = ROUTE_WAYPOINTS[appState.waypointIndex];
+      const marker = document.getElementById('shipperMarker');
+      if (marker) {
+        marker.setAttribute('transform', `translate(${wp.x}, ${wp.y})`);
+      }
+
+      const coordBadge = document.getElementById('mapCoordBadge');
+      if (coordBadge) {
+        coordBadge.textContent = `${wp.lat.toFixed(4)}, ${wp.lng.toFixed(4)}`;
+      }
+
+      const polyStr = appState.routePoints.map(p => `${p.x},${p.y}`).join(' ');
+      const poly = document.getElementById('routePolyline');
+      const shadowPoly = document.getElementById('routeShadowPolyline');
+      if (poly) poly.setAttribute('points', polyStr);
+      if (shadowPoly) shadowPoly.setAttribute('points', polyStr);
+
+      const startGroup = document.getElementById('startPinGroup');
+      const startCircle = document.getElementById('startPinCircle');
+      if (appState.routePoints.length > 0 && appState.currentShiftId) {
+        startGroup.classList.remove('hidden');
+        startCircle.setAttribute('cx', appState.routePoints[0].x);
+        startCircle.setAttribute('cy', appState.routePoints[0].y);
+      } else {
+        startGroup.classList.add('hidden');
+      }
+    }
+
+    /**
+     * =========================================================================
+     * DANH SÁCH ĐƠN NƯỚC GIẢI KHÁT (TÍNH LƯƠNG 1.000đ/LY) & XÁC MINH ẢNH POD
+     * =========================================================================
+     */
+    function simulateCallCustomer(name, phone) {
+      showSnackBar(`Đang gọi ${name} (${phone})...`, 'info');
+    }
+
+    function renderOrdersList() {
+      const container = document.getElementById('ordersListContainer');
+      const progressText = document.getElementById('orderProgressText');
+      if (!container) return;
+
+      const total = appState.db.orders.length;
+      const doneCount = appState.db.orders.filter(o => o.status === 'completed').length;
+      if (progressText) progressText.textContent = `${doneCount}/${total} hoàn thành`;
+
+      // Sắp xếp đơn chưa giao lên trước
+      const sortedOrders = [...appState.db.orders].sort((a, b) => {
+        if (a.status === b.status) return 0;
+        return a.status === 'pending' ? -1 : 1;
+      });
+
+      container.innerHTML = sortedOrders.map(order => {
+        const isDone = order.status === 'completed';
+        const orderCommission = order.cup_count * CUP_RATE_VND;
+
+        return `
+          <div class="p-3 rounded-2xl border ${isDone ? 'bg-slate-50/90 border-slate-200/80' : 'bg-white border-slate-200 shadow-2xs'} transition">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-bold text-[13px] text-slate-900 truncate">${order.customer_name}</span>
+                  <button
+                    type="button"
+                    onclick="simulateCallCustomer('${order.customer_name.replace(/'/g, "\\'")}', '${order.customer_phone}')"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10.5px] font-bold border border-emerald-200/80 cursor-pointer">
+                    📞 ${order.customer_phone}
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">📍 ${order.customer_address}</p>
+              </div>
+
+              ${isDone
+                ? `<span class="shrink-0 px-2 py-0.5 rounded-full text-[10.5px] font-extrabold border bg-emerald-100 text-emerald-800 border-emerald-200">+${formatVnd(orderCommission)}đ (${order.cup_count} ly)</span>`
+                : `<button
+                    type="button"
+                    onclick="openProofBottomSheet('${order.id}')"
+                    class="shrink-0 px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-[11px] font-bold shadow-xs transition cursor-pointer">
+                    Giao hàng
+                  </button>`
+              }
+            </div>
+
+            <!-- Thông tin đơn nước giải khát & Tiền công theo số ly -->
+            <div class="mt-2 px-2.5 py-1.5 rounded-xl bg-amber-50/75 border border-amber-200/70 flex items-start justify-between gap-2">
+              <p class="text-[11px] font-medium text-slate-800 leading-snug">🧋 <strong class="text-amber-900">${order.cup_count} ly:</strong> ${order.order_items}</p>
+              ${!isDone
+                ? `<span class="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/80">+${formatVnd(orderCommission)}đ</span>`
+                : `<span class="shrink-0 text-[10px] font-semibold text-emerald-600">✓ Đã chụp POD</span>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openProofBottomSheet(orderId) {
+      const shift = getCurrentShift();
+      if (!shift) {
+        showSnackBar('Vui lòng bấm "CHẤM CÔNG VÀO CA" trước khi giao đơn!', 'warning');
+        return;
+      }
+
+      const order = appState.db.orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      appState.activeOrderId = orderId;
+      appState.capturedPhotoData = null;
+
+      const orderCommission = order.cup_count * CUP_RATE_VND;
+
+      document.getElementById('sheetCustomerName').textContent = order.customer_name;
+      document.getElementById('sheetCustomerPhone').textContent = order.customer_phone;
+      document.getElementById('sheetCustomerAddress').textContent = order.customer_address;
+      document.getElementById('sheetOrderCupBadge').textContent = `${order.cup_count} ly • +${formatVnd(orderCommission)}đ`;
+      document.getElementById('sheetOrderItems').textContent = order.order_items;
+      document.getElementById('photoHouseNumber').textContent = order.short_house || 'GIAO TẬN NƠI';
+      document.getElementById('cameraHouseLabel').textContent = order.short_house || 'GIAO TẬN NƠI';
+
+      // Reset trạng thái chưa chụp ảnh
+      document.getElementById('emptyPhotoPlaceholder').classList.remove('hidden');
+      document.getElementById('capturedPhotoPreview').classList.add('hidden');
+      document.getElementById('openCameraBtnText').textContent = 'Chụp ảnh xác minh';
+
+      const submitBtn = document.getElementById('completeOrderSubmitBtn');
+      submitBtn.disabled = true;
+      submitBtn.className = 'mt-2.5 w-full py-3 rounded-full bg-slate-200 text-slate-400 font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition cursor-not-allowed';
+      document.getElementById('completeOrderBtnText').textContent = `HOÀN THÀNH ĐƠN (+${formatVnd(orderCommission)} VNĐ • ${order.cup_count} LY)`;
+
+      document.getElementById('proofBottomSheetOverlay').classList.remove('hidden');
+    }
+
+    function closeProofBottomSheet() {
+      document.getElementById('proofBottomSheetOverlay').classList.add('hidden');
+      appState.activeOrderId = null;
+      appState.capturedPhotoData = null;
+    }
+
+    function openSimulatedCamera() {
+      const wp = ROUTE_WAYPOINTS[appState.waypointIndex];
+      document.getElementById('liveCamTimestamp').textContent = `Thời gian: ${formatFullDateTime()}`;
+      document.getElementById('liveCamCoords').textContent = `Tọa độ: ${wp.lat.toFixed(5)}, ${wp.lng.toFixed(5)}`;
+      document.getElementById('cameraViewfinderOverlay').classList.remove('hidden');
+    }
+
+    function closeSimulatedCamera() {
+      document.getElementById('cameraViewfinderOverlay').classList.add('hidden');
+    }
+
+    function captureProofPhoto() {
+      const order = appState.db.orders.find(o => o.id === appState.activeOrderId);
+      if (!order) return;
+
+      const wp = ROUTE_WAYPOINTS[appState.waypointIndex];
+      const timeStr = formatFullDateTime();
+      const gpsStr = `GPS: ${wp.lat.toFixed(5)}° N, ${wp.lng.toFixed(5)}° E • TP.HCM`;
+
+      appState.capturedPhotoData = {
+        time: timeStr,
+        gps: gpsStr,
+        house: order.short_house || 'GIAO TẬN NƠI',
+        fileName: `pod_${order.id}_${Date.now()}.jpg`
+      };
+
+      document.getElementById('watermarkOrderLabel').textContent = `✓ VERIFIED POD • ${order.customer_name} (${order.cup_count} ly)`;
+      document.getElementById('watermarkTime').textContent = timeStr;
+      document.getElementById('watermarkGps').textContent = gpsStr;
+
+      document.getElementById('emptyPhotoPlaceholder').classList.add('hidden');
+      document.getElementById('capturedPhotoPreview').classList.remove('hidden');
+      document.getElementById('openCameraBtnText').textContent = 'Chụp lại ảnh';
+
+      // Mở khóa nút Hoàn thành đơn
+      const submitBtn = document.getElementById('completeOrderSubmitBtn');
+      submitBtn.disabled = false;
+      submitBtn.className = 'mt-2.5 w-full py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition cursor-pointer';
+
+      closeSimulatedCamera();
+      showSnackBar('Đã chụp ảnh xác minh! Có thể nhấn Hoàn thành đơn.', 'success');
+    }
+
+    function submitOrderCompletion() {
+      const shift = getCurrentShift();
+      const order = appState.db.orders.find(o => o.id === appState.activeOrderId);
+      if (!shift || !order || !appState.capturedPhotoData) return;
+
+      // Trigger Backend: Tính lương 1.000đ × số ly giao
+      const orderCommission = order.cup_count * CUP_RATE_VND;
+
+      order.status = 'completed';
+      order.shift_id = shift.id;
+      order.commission = orderCommission;
+      order.proof_image_url = `https://supabase.co/storage/delivery-proofs/${appState.capturedPhotoData.fileName}`;
+      order.proof_meta = `${appState.capturedPhotoData.time} | ${appState.capturedPhotoData.gps}`;
+      order.completed_at = formatTimeNow();
+
+      shift.total_orders += 1;
+      shift.total_cups += order.cup_count;
+      shift.total_earnings += orderCommission;
+
+      // Đổi màu ghim trên bản đồ thành xanh lá nếu có
+      if (order.mapPinId) {
+        const pinEl = document.getElementById(order.mapPinId);
+        if (pinEl) {
+          const circle = pinEl.querySelector('circle');
+          if (circle) circle.setAttribute('fill', '#16A34A');
+        }
+      }
+
+      closeProofBottomSheet();
+      updateShiftAndWorkerUI();
+      renderOrdersList();
+      renderDatabaseInspector();
+      showSnackBar(`Giao xong ${order.cup_count} ly! +${formatVnd(orderCommission)} VNĐ`, 'success');
+    }
+
+    /**
+     * =========================================================================
+     * TẠO THÊM ĐƠN NƯỚC MỚI & CÔNG TẮC FAKE GPS
+     * =========================================================================
+     */
+    function toggleNewOrderForm() {
+      const form = document.getElementById('newOrderForm');
+      if (form) form.classList.toggle('hidden');
+    }
+
+    // Tự động cộng tổng số lượng ly gợi ý khi gõ chuỗi món nước (VD: "4 Trà sữa, 2 Trà đào" -> 6)
+    function autoSyncCupCountFromItems() {
+      const itemsText = document.getElementById('inputOrderItems').value;
+      const matches = itemsText.match(/(?:^|,|\+|và)\s*(\d+)\s+/gi);
+      if (matches && matches.length > 0) {
+        let sum = 0;
+        matches.forEach(m => {
+          const num = parseInt(m.replace(/\D/g, ''), 10);
+          if (!isNaN(num)) sum += num;
+        });
+        if (sum > 0) {
+          document.getElementById('inputCupCount').value = sum;
+        }
+      }
+    }
+
+    function fillSampleNewOrder() {
+      const samples = [
+        {
+          name: 'Chị Ngọc Hân',
+          phone: '0908 777 666',
+          address: '88 Pasteur, P. Bến Nghé, Q.1',
+          items: '4 Trà Sữa Oolong Nhài (50% đường, Ít đá), 2 Trà Đào Cam Sả',
+          cups: 6
+        },
+        {
+          name: 'Anh Hoàng Nam',
+          phone: '0912 345 987',
+          address: '215 Hai Bà Trưng, P. Võ Thị Sáu, Q.3',
+          items: '6 Cà Phê Sữa Đá Sài Gòn, 4 Nước Ép Cam Tươi',
+          cups: 10
+        },
+        {
+          name: 'Bạn Minh Thư',
+          phone: '0977 222 111',
+          address: '42 Đồng Khởi, P. Bến Nghé, Q.1',
+          items: '3 Trà Mãng Cầu Giã Tay, 2 Hồng Trà Kem Cheese',
+          cups: 5
+        }
+      ];
+      const pick = samples[appState.db.orders.length % samples.length];
+      document.getElementById('inputCustomerName').value = pick.name;
+      document.getElementById('inputCustomerPhone').value = pick.phone;
+      document.getElementById('inputCustomerAddress').value = pick.address;
+      document.getElementById('inputOrderItems').value = pick.items;
+      document.getElementById('inputCupCount').value = pick.cups;
+    }
+
+    function submitNewBeverageOrder(event) {
+      event.preventDefault();
+      const name = document.getElementById('inputCustomerName').value.trim();
+      const phone = document.getElementById('inputCustomerPhone').value.trim();
+      const address = document.getElementById('inputCustomerAddress').value.trim();
+      const items = document.getElementById('inputOrderItems').value.trim();
+      const cupCount = Math.max(1, parseInt(document.getElementById('inputCupCount').value, 10) || 1);
+
+      if (!name || !phone || !address || !items) return;
+
+      const newId = 'ord-' + String(appState.db.orders.length + 1).padStart(2, '0');
+      const shortHouse = address.split(',')[0].toUpperCase().slice(0, 18);
+
+      appState.db.orders.unshift({
+        id: newId,
+        shift_id: null,
+        customer_name: name,
+        customer_phone: phone,
+        customer_address: address,
+        order_items: items,
+        cup_count: cupCount,
+        short_house: shortHouse,
+        status: 'pending',
+        proof_image_url: null,
+        proof_meta: null,
+        completed_at: null,
+        commission: cupCount * CUP_RATE_VND,
+        mapPinId: null
+      });
+
+      document.getElementById('newOrderForm').reset();
+      document.getElementById('inputCupCount').value = 1;
+      document.getElementById('newOrderForm').classList.add('hidden');
+
+      renderOrdersList();
+      renderDatabaseInspector();
+      showSnackBar(`Có đơn mới từ ${name} (${cupCount} ly = +${formatVnd(cupCount * CUP_RATE_VND)}đ)!`, 'info');
+    }
+
+    function onFakeGpsToggleChange() {
+      const toggle = document.getElementById('fakeGpsToggle');
+      const statusText = document.getElementById('fakeGpsStatusText');
+      appState.fakeGpsEnabled = toggle.checked;
+
+      if (appState.fakeGpsEnabled) {
+        statusText.textContent = 'Đang BẬT';
+        statusText.className = 'text-xs font-bold text-red-600 w-16';
+        showSnackBar('CẢNH BÁO: Fake GPS đang bật! Mọi thao tác vị trí bị chặn.', 'error');
+      } else {
+        statusText.textContent = 'Đang TẮT';
+        statusText.className = 'text-xs font-bold text-slate-500 w-16';
+        showSnackBar('Đã tắt giả lập Fake GPS. GPS hoạt động bình thường.', 'success');
+      }
+    }
+
+    /**
+     * =========================================================================
+     * LIVE SUPABASE DATABASE INSPECTOR & MODAL XEM ẢNH POD
+     * =========================================================================
+     */
+    function switchDbTab(tabName) {
+      const tabs = ['shifts', 'location_logs', 'orders'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`dbTabBtn_${t}`);
+        const table = document.getElementById(`dbTable_${t}`);
+        if (t === tabName) {
+          btn.className = 'px-3.5 py-2 text-xs font-bold rounded-t-lg border-t border-x border-slate-200 bg-white text-blue-600 -mb-px flex items-center gap-1.5 cursor-pointer';
+          table.classList.remove('hidden');
+        } else {
+          btn.className = 'px-3.5 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer';
+          table.classList.add('hidden');
+        }
+      });
+    }
+
+    function renderDatabaseInspector() {
+      document.getElementById('countBadge_shifts').textContent = appState.db.shifts.length;
+      document.getElementById('countBadge_location_logs').textContent = appState.db.location_logs.length;
+      document.getElementById('countBadge_orders').textContent = appState.db.orders.length;
+
+      // 1. Render bảng shifts (gồm Họ tên, SĐT nhân viên, Tổng số ly, Tổng lương)
+      const tbodyShifts = document.getElementById('tbody_shifts');
+      if (appState.db.shifts.length === 0) {
+        tbodyShifts.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400 font-sans">Chưa có ca làm nào. Hãy bấm "CHẤM CÔNG VÀO CA" trên điện thoại.</td></tr>';
+      } else {
+        tbodyShifts.innerHTML = appState.db.shifts.map(s => `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2 pr-3 font-bold text-blue-600">${s.id}</td>
+            <td class="py-2 px-3 font-sans font-semibold text-slate-800">${s.employee_name}</td>
+            <td class="py-2 px-3 text-slate-600">${s.employee_phone}</td>
+            <td class="py-2 px-3 text-slate-600">${s.check_in_time}</td>
+            <td class="py-2 px-3">${s.check_out_time ? `<span class="text-slate-600">${s.check_out_time}</span>` : '<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px]">Đang làm</span>'}</td>
+            <td class="py-2 px-3 text-right font-bold text-amber-700">${s.total_cups} ly</td>
+            <td class="py-2 pl-3 text-right font-bold text-emerald-600">${formatVnd(s.total_earnings)}đ</td>
+          </tr>
+        `).join('');
+      }
+
+      // 2. Render bảng location_logs
+      const tbodyLogs = document.getElementById('tbody_location_logs');
+      if (appState.db.location_logs.length === 0) {
+        tbodyLogs.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-400 font-sans">Chưa có nhật ký tọa độ GPS.</td></tr>';
+      } else {
+        tbodyLogs.innerHTML = appState.db.location_logs.slice(0, 15).map(l => `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2 pr-3 text-slate-400">#${l.id}</td>
+            <td class="py-2 px-3 text-blue-600">${l.shift_id}</td>
+            <td class="py-2 px-3">${l.lat}</td>
+            <td class="py-2 px-3">${l.lng}</td>
+            <td class="py-2 pl-3 text-slate-500">${l.recorded_at}</td>
+          </tr>
+        `).join('');
+      }
+
+      // 3. Render bảng orders (bao gồm cột cups và commission = cups * 1.000đ)
+      const tbodyOrders = document.getElementById('tbody_orders');
+      tbodyOrders.innerHTML = appState.db.orders.map(o => {
+        const isDone = o.status === 'completed';
+        const comm = o.cup_count * CUP_RATE_VND;
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2 pr-3 font-sans font-semibold text-slate-800">${o.customer_name}</td>
+            <td class="py-2 px-3 text-slate-600">${o.customer_phone}</td>
+            <td class="py-2 px-3 font-sans text-slate-600 max-w-[160px] truncate" title="${o.order_items}">${o.order_items}</td>
+            <td class="py-2 px-3 text-right font-bold text-amber-700">${o.cup_count} ly</td>
+            <td class="py-2 px-3 text-right font-bold ${isDone ? 'text-emerald-600' : 'text-slate-500'}">${isDone ? '+' : ''}${formatVnd(comm)}đ</td>
+            <td class="py-2 px-3">
+              ${isDone
+                ? '<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold">completed</span>'
+                : '<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold">pending</span>'}
+            </td>
+            <td class="py-2 pl-3">
+              ${isDone
+                ? `<button type="button" onclick="openInspectorPhotoModal('${o.id}')" class="text-blue-600 hover:underline font-sans font-semibold cursor-pointer">Xem ảnh POD</button>`
+                : '<span class="text-slate-400">NULL</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openInspectorPhotoModal(orderId) {
+      const order = appState.db.orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      document.getElementById('inspectorPhotoTitle').textContent = `Ảnh xác minh POD: ${order.customer_name} (${order.cup_count} ly)`;
+      document.getElementById('modalHouseLabel').textContent = order.short_house || 'GIAO TẬN NƠI';
+      document.getElementById('modalPhotoMeta').textContent = `${order.proof_meta || ''} • Lương: +${formatVnd(order.commission)}đ (${order.cup_count} ly)`;
+      document.getElementById('inspectorPhotoModal').classList.remove('hidden');
+    }
+
+    function closeInspectorPhotoModal() {
+      document.getElementById('inspectorPhotoModal').classList.add('hidden');
+    }
+
+    function resetAllSimulation() {
+      if (appState.autoDriveTimer) {
+        clearInterval(appState.autoDriveTimer);
+        appState.autoDriveTimer = null;
+      }
+
+      appState.currentShiftId = null;
+      appState.shiftStartTime = null;
+      appState.waypointIndex = 0;
+      appState.routePoints = [];
+      appState.mapZoom = 1;
+      appState.fakeGpsEnabled = false;
+      appState.activeOrderId = null;
+      appState.capturedPhotoData = null;
+
+      appState.db.shifts = [];
+      appState.db.location_logs = [];
+      appState.db.orders = JSON.parse(JSON.stringify(INITIAL_ORDERS));
+
+      // Khôi phục màu ghim bản đồ
+      ['mapPinOrder1', 'mapPinOrder2', 'mapPinOrder3'].forEach(pinId => {
+        const pinEl = document.getElementById(pinId);
+        if (pinEl) {
+          const circle = pinEl.querySelector('circle');
+          if (circle) circle.setAttribute('fill', '#F97316');
+        }
+      });
+
+      const toggle = document.getElementById('fakeGpsToggle');
+      if (toggle) toggle.checked = false;
+      const statusText = document.getElementById('fakeGpsStatusText');
+      if (statusText) {
+        statusText.textContent = 'Đang TẮT';
+        statusText.className = 'text-xs font-bold text-slate-500 w-16';
+      }
+
+      document.getElementById('autoDriveDot').className = 'w-2 h-2 rounded-full bg-slate-400';
+      document.getElementById('autoDriveLabel').textContent = 'Tự động chạy xe';
+      document.getElementById('googleMapSvg').style.transform = 'scale(1)';
+      document.getElementById('checkInModal').classList.add('hidden');
+      document.getElementById('shiftSummaryModal').classList.add('hidden');
+      document.getElementById('proofBottomSheetOverlay').classList.add('hidden');
+      document.getElementById('cameraViewfinderOverlay').classList.add('hidden');
+
+      updateShiftAndWorkerUI();
+      updateMapVisuals();
+      renderOrdersList();
+      renderDatabaseInspector();
+      showSnackBar('Đã đặt lại toàn bộ mô phỏng từ đầu.', 'info');
+    }
+
+    // Khởi tạo giao diện ban đầu khi tải trang
+    window.addEventListener('DOMContentLoaded', () => {
+      updatePhoneClock();
+      setInterval(updatePhoneClock, 15000);
+      updateShiftAndWorkerUI();
+      updateMapVisuals();
+      renderOrdersList();
+      renderDatabaseInspector();
+    });
+  </script>
+</body>
+</html>
